@@ -1,0 +1,11 @@
+import { analyzeWithDeepSeek } from './analysis.js';
+import { createApi } from './api.js';
+const port = Number(process.env.PORT || 8787);
+if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('PORT 无效');
+const limit = Number(process.env.AI_HOURLY_LIMIT || 20);
+if (!Number.isInteger(limit) || limit < 1) throw new Error('AI_HOURLY_LIMIT 无效');
+const key = process.env.DEEPSEEK_API_KEY?.trim();
+const server = createApi({ token: process.env.APP_ACCESS_TOKEN || '', configured: !!key && !key.startsWith('your_'), origins: (process.env.ALLOWED_ORIGINS || 'http://localhost:8081,http://localhost:8082,http://localhost:8088,http://127.0.0.1:8081').split(',').map(v => v.trim()), hourlyLimit: limit, generate: analyzeWithDeepSeek });
+server.listen(port, process.env.HOST || '127.0.0.1', () => console.log(`拉完了 AI 服务已启动，端口 ${port}。${key ? '' : 'DeepSeek 密钥尚未配置。'}`));
+server.on('error', () => { console.error('服务启动失败，请检查端口是否被占用。'); process.exitCode = 1; });
+process.once('SIGINT', () => server.close()); process.once('SIGTERM', () => server.close());
